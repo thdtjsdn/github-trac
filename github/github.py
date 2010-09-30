@@ -132,10 +132,10 @@ class GithubPlugin(Component):
         browser = self.browser.replace('/tree/master', '/commit/')
 
         svnrevision = req.path_info.replace('/changeset/r', '')
-       svnrevision = svnrevision.zfill(5)
-       subfolder1 = svnrevision[:2]
-       subfolder2 = svnrevision[2:3]
-       filename = svnrevision[3:]
+        svnrevision = svnrevision.zfill(5)
+        subfolder1 = svnrevision[:2]
+        subfolder2 = svnrevision[2:3]
+        filename = svnrevision[3:]
 
         self.env.log.debug("Redirect SVN: %s" % svnrevision)
         self.env.log.debug("Path: %s/%s/%s/%s" % (self.svnhashes, subfolder1, subfolder2, filename))
