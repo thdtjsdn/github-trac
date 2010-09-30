@@ -15,6 +15,7 @@ class GithubPlugin(Component):
     key = Option('github', 'apitoken', '', doc="""Your GitHub API Token found here: https://github.com/account, """)
     closestatus = Option('github', 'closestatus', '', doc="""This is the status used to close a ticket. It defaults to closed.""")
     browser = Option('github', 'browser', '', doc="""Place your GitHub Source Browser URL here to have the /browser entry point redirect to GitHub.""")
+    svnhashes = Option('github', 'svnhashes', '', doc="""If transitioning from SVN, this is the path where your hashes are located.""")
     autofetch = Option('github', 'autofetch', '', doc="""Should we auto fetch the repo when we get a commit hook from GitHub.""")
     repo = Option('trac', 'repository_dir' '', doc="""This is your repository dir""")
 
@@ -22,6 +23,7 @@ class GithubPlugin(Component):
         self.hook = CommitHook(self.env)
         self.env.log.debug("API Token: %s" % self.key)
         self.env.log.debug("Browser: %s" % self.browser)
+        self.env.log.debug("Hash Location: %s" % self.svnhashes)
         self.processHook = False
 
     
@@ -51,9 +53,14 @@ class GithubPlugin(Component):
             if serve:
                 self.processBrowserURL(req)
 
-            serve2 = req.path_info.startswith('/changeset')
-            self.env.log.debug("Handle Pre-Request /changeset: %s" % serve2)
+            serve2 = req.path_info.startswith('/changeset/r')
+            self.env.log.debug("Handle Pre-Request /changeset/r: %s" % serve2)
             if serve2:
+                self.processSubversionURL(req)
+
+            serve3 = req.path_info.startswith('/changeset')
+            self.env.log.debug("Handle Pre-Request /changeset: %s" % serve3)
+            if serve3:
                 self.processChangesetURL(req)
 
         return handler
@@ -120,3 +127,29 @@ class GithubPlugin(Component):
               self.env.log.debug("git fetch failed!")
 
 
+    def processSubversionURL(self, req):
+        self.env.log.debug("processSubversionURL")
+        browser = self.browser.replace('/tree/master', '/commit/')
+
+        svnrevision = req.path_info.replace('/changeset/r', '')
+       svnrevision = svnrevision.zfill(5)
+       subfolder1 = svnrevision[:2]
+       subfolder2 = svnrevision[2:3]
+       filename = svnrevision[3:]
+
+        self.env.log.debug("Redirect SVN: %s" % svnrevision)
+        self.env.log.debug("Path: %s/%s/%s/%s" % (self.svnhashes, subfolder1, subfolder2, filename))
+        try:
+            filehandle = open(self.svnhashes+'/'+subfolder1+'/'+subfolder2+'/'+filename,"r")
+            line = filehandle.readline()
+            filehandle.close()
+            url = req.path_info.replace('/changeset/r'+svnrevision, line)
+        except:
+            browser = self.browser
+            url = ''
+
+        redirect = '%s%s' % (browser, url)
+        self.env.log.debug("Redirect URL: %s" % redirect)
+        out = 'Going to GitHub: %s' % redirect
+
+        req.redirect(redirect)
