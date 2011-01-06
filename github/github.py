@@ -142,6 +142,7 @@ class GithubPlugin(Component):
         try:
             filehandle = open(self.svnhashes+'/'+subfolder1+'/'+subfolder2+'/'+filename,"r")
             line = filehandle.readline()
+            line = line.rstrip("\r\n")
             filehandle.close()
             url = req.path_info.replace('/changeset/r'+svnrevision, line)
         except:
