@@ -53,16 +53,14 @@ class GithubPlugin(Component):
             if serve:
                 self.processBrowserURL(req)
 
-            serve2 = req.path_info.startswith('/changeset/r')
-            self.env.log.debug("Handle Pre-Request /changeset/r: %s" % serve2)
+            serve2 = req.path_info.startswith('/changeset/')
             if serve2:
-                self.processSubversionURL(req)
-
-            serve3 = req.path_info.startswith('/changeset')
-            self.env.log.debug("Handle Pre-Request /changeset: %s" % serve3)
-            if serve3:
-                self.processChangesetURL(req)
-
+                revision = req.path_info.replace('/changeset/', '')
+                self.env.log.debug("Handle Pre-Request /changeset/: %s" % revision)
+                if len(revision) < 6 and revision.isdigit():
+                    self.processSubversionURL(req)
+                else:
+                    self.processChangesetURL(req)
         return handler
 
 
@@ -131,7 +129,7 @@ class GithubPlugin(Component):
         self.env.log.debug("processSubversionURL")
         browser = self.browser.replace('/tree/master', '/commit/')
 
-        svnrevision = req.path_info.replace('/changeset/r', '')
+        svnrevision = req.path_info.replace('/changeset/', '')
         svnrevision = svnrevision.zfill(5)
         subfolder1 = svnrevision[:2]
         subfolder2 = svnrevision[2:3]
@@ -144,7 +142,7 @@ class GithubPlugin(Component):
             line = filehandle.readline()
             line = line.rstrip("\r\n")
             filehandle.close()
-            url = req.path_info.replace('/changeset/r'+svnrevision, line)
+            url = req.path_info.replace('/changeset/'+svnrevision, line)
         except:
             browser = self.browser
             url = ''
